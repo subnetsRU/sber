@@ -1,0 +1,77 @@
+<!--
+    Пример основан на: https://github.com/sberdevices/assistant-client/tree/main/examples/umd-example
+    Для отладки эту страницу нужно открывать с параметром devel. Пример:
+	https://example.ru/frontend.html?devel=true
+-->
+
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sber canvas app example</title>
+    <META HTTP-EQUIV="PRAGMA" CONTENT="NO-CACHE">
+    <META HTTP-EQUIV="CACHE-CONTROL" CONTENT="NO-CACHE">
+    <META HTTP-EQUIV="expires" content="Mon, 01 Jan 1990 00:00:00 GMT">
+    <META HTTP-EQUIV="Content-language" CONTENT="ru">
+    <META NAME="author" CONTENT="Nikolaev Dmitry">
+    <script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@sberdevices/assistant-client@2.6.0/umd/assistant.min.js"></script>
+</head>
+<style>
+body{
+    background-color: #1A1A1A;
+}
+div#command{
+    width: 90vw;
+    overflow: auto;
+    margin: 20px;
+    padding: 10px;
+    border: 1px solid red;
+    color: white;
+}
+</style>
+<body>
+<div id="command"></div>
+<button id="next">Далее</button>
+<script type="text/javascript">
+    var state = { };
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('devel') === 'true'){
+        console.info('Start devel version');
+        var token = ''; // <- сюда вставляем токен из smartapp-studio (https://github.com/sberdevices/assistant-client/tree/main/examples/umd-example)
+        var initPhrase = 'запусти НАЗВАНИЕ ВАШЕГО СМАРТАПА'; // <- сюда вставляем активационную фразу своего canvas app
+        var ac = assistant.createSmartappDebugger({ getState: () => state, token, initPhrase });
+    }else{
+        console.info('Start production version');
+        var ac = assistant.createAssistant({ getState: () => state });
+    }
+    var processData = function(command){
+        console.info('got command',command);
+        document.getElementById('command').innerHTML = JSON.stringify(command);
+    }
+
+    ac.on('start', (command) => {
+        let initialData = ac.getInitialData();
+        for(let i=0; i < initialData.length; i++){
+            processData(initialData[i]);
+        }
+    });
+    ac.on('data', (command) => {
+        processData(command);
+    });
+    
+    document.addEventListener("DOMContentLoaded", function(){
+	var el = document.getElementById("next");
+	el.addEventListener(
+	    "click",
+	    function(){
+		console.log('send data to webhook',el.id);
+		ac.sendData({ action: { action_id: el.id} });
+	    },
+	    false
+	);
+    });
+</script>
+</body>
+</html>
