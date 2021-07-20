@@ -1,0 +1,274 @@
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sber graph canvas app example</title>
+    <META HTTP-EQUIV="PRAGMA" CONTENT="NO-CACHE">
+    <META HTTP-EQUIV="CACHE-CONTROL" CONTENT="NO-CACHE">
+    <META HTTP-EQUIV="expires" content="Mon, 01 Jan 1990 00:00:00 GMT">
+    <META HTTP-EQUIV="Content-language" CONTENT="ru">
+    <META NAME="author" CONTENT="@WaxerDima @VirusNet">
+    
+    <script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@sberdevices/assistant-client@3.3.1/umd/assistant.min.js"></script>
+</head>
+<style>
+body{
+    background-color: #1A1A1A;
+    color: #ffffff;
+}
+div#command{
+    width: 90vw;
+    overflow: auto;
+    margin: 20px;
+    padding: 10px;
+    border: 1px solid red;
+    color: white;
+}
+
+ul {
+    font-size: 14px;
+    color: #ffffff;
+    padding: 0;
+    margin: 0;
+}
+ul li {
+    display: inline-block;
+    width: 150px;
+    height: 150px;
+    border: 2px solid white;
+    border-radius: 5px;
+    text-align: center;
+    cursor: pointer;
+}
+ul li.onFocus{
+    border-color: #9ecd09;
+}
+ul li:active {
+    border: 2px solid #ff9900;
+}
+ul li.select {
+    background-color: #ffffff;
+}
+ul li.win {
+    background-color: #9ecd09;
+    color: #9ecd09;
+}
+
+</style>
+
+<body>
+<div id="command">Debug: Тут выводится всё что приходит от платформы. Ожидаем данных...</div>
+<h1>Игра колпачки v2.0</h1>
+<center>
+    <ul id="container">
+	<li id="cap-1" data-number="Один">Один</li>
+	<li id="cap-2" data-number="Два">Два</li>
+	<li id="cap-3" data-number="Три">Три</li>
+    </ul>
+    <div id="current-number"></div>
+</center>
+
+<script type="text/javascript">
+    /*
+	Локальное тестирование в браузере на вашем компьютере
+	Для отладки эту страницу нужно открывать с параметром devel. Пример:
+	    https://example.ru/frontend.html?devel=true
+	
+	Необходимо вставить значения переменных token и initPhrase (они чуть ниже)
+    */
+    var token = ''; // <- сюда вставляем токен из smartapp-studio (https://developer.sberdevices.ru/docs/ru/developer_tools/sdk/overview)
+    var initPhrase = 'запусти мой мега пупер канвас'; // <- сюда вставляем активационную фразу для хапуска вашего canvas app
+    //
+    
+    //Определяем sberbox это или нет
+    var isBox = function(){
+	let nav = window.navigator.userAgent.toLocaleLowerCase();
+	return (/sberbox/.test(nav) || /satellite/.test(nav) || /tv/.test(nav));
+    }
+    
+    var winNumber = null;
+    function run(text) {
+        var currentNumber = getNumberCap(text);
+        document.querySelectorAll('li').forEach(item => item.className = 'select');
+        if (winNumber === currentNumber) {
+            document.getElementById('current-number').innerHTML = '<h2>Вы выиграли! 👍 </h2>';
+            document.getElementById('cap-' + currentNumber).className = 'win'
+        } else {
+            document.getElementById('current-number').innerHTML = '<h2>Вы проиграли 😞</h2>';
+        }
+    }
+    
+    function getNumberCap(text) {
+        switch(text) {
+            case 'Один':
+                return 1;
+            case 'Два':
+                return 2;
+            case 'Три':
+                return 3;
+        }
+    }
+    
+    //Выделям элемент при перемещении "курсора" пультом Sberbox
+    function addfocus(direct){
+	let container = document.getElementById('container');
+	if (!direct){
+	    direct = 'right';
+	}
+	if (container){
+	    let items = container.children;
+	    let focusOn = null;
+	    for(let i = 0; i < items.length; i++){
+		if (items[i].classList.contains('onFocus')){
+		    focusOn = i;
+		}
+		items[i].className = '';
+	    }
+	    if (typeof focusOn != "number"){
+		focusOn = 0;
+	    }
+	    if (direct == "left"){
+		focusOn -= 1;
+	    }else{
+		focusOn += 1;
+	    }
+	    if (typeof items[focusOn] === "undefined"){
+		if (direct == "left"){
+		    focusOn = (items.length - 1);
+		}else{
+		    focusOn = 0;
+		}
+	    }
+	    if (typeof items[focusOn] !== "undefined"){
+		items[focusOn].classList.add('onFocus');
+	    }
+	}
+    }
+    
+    //Инициируем assistant-client
+    var state = { };
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('devel') === 'true'){
+        console.info('Start devel version');
+        var ac = assistant.createSmartappDebugger({ getState: () => state, token, initPhrase });
+    }else if (url.searchParams.get('devel') === 'local'){
+	var ac = {
+	    on: function(){},
+	    sendData: function(data){console.log('skip send data',data);}
+	};
+    }else{
+        console.info('Start production version');
+        var ac = assistant.createAssistant({ getState: () => state });
+    }
+    
+    //Разбираем пришедшие (от платформы) данные
+    var processData = function(command){
+        console.info('got command',command);
+        document.getElementById('command').innerHTML = JSON.stringify(command);
+        if (command.type == "smart_app_data"){
+	    if (typeof command.action !== "undefined" && typeof command.action.type !== "undefined"){
+		let action = command.action;
+		document.getElementById('command').innerHTML = 'action: ' + JSON.stringify(action);
+        	switch(action.type){
+            	    case 'START':
+                	winNumber = command.action.winNumber;
+                	document.getElementById('current-number').innerHTML = '';
+                	document.querySelectorAll('li').forEach(item => item.className = '');
+                	break;
+            	    case 'SELECT_CAP':
+                	select(action.select);
+                	break;
+            	    case 'EXIT':
+            		console.log('Close smartapp');
+            		if (ac && typeof ac.close === "function"){
+			    ac.close();
+			}
+                	break;
+            	    default:
+                	console.error('Unsupported action-type', action.type);
+                	break;
+        	}
+	    }
+	}
+    }
+
+    //Отправляем данные на back
+    function select(number) {
+	let SendToBack = {
+            action: {action_id: 'SELECT_CAP', parameters: {select: number, winNumber: winNumber, win: getNumberCap(number) === winNumber}}
+        }
+	console.log('Select',number,SendToBack);
+        run(number);
+        var unsubscribe = ac.sendData(SendToBack, (data) => {
+    	    winNumber = null;
+            unsubscribe();
+        });
+    }
+
+    //Принимаем начальные данные от платформы
+    ac.on('start', (command) => {
+        let initialData = ac.getInitialData();
+        for(let i=0; i < initialData.length; i++){
+            processData(initialData[i]);
+        }
+    });
+    
+    //Принимаем данные от платформы
+    ac.on('data', (command) => {
+        processData(command);
+    });
+
+document.addEventListener("DOMContentLoaded", function(){
+    //Навешиваем события
+    let caps = document.getElementById('container').children;
+    for(let i = 0; i < caps.length; i++){
+	caps[i].addEventListener(
+	    'click',
+	    function(e){
+		console.log('click on',this,'=>',this.dataset.number);
+		select(this.dataset.number);
+	    },
+	    false
+	);
+    }
+    
+    //Поддержка пульта sberbox
+    if (isBox()){
+	document.getElementById('container').children[0].classList.add('onFocus');
+	window.addEventListener('keydown', (event) => {
+	    if (!winNumber){
+		return;
+	    }
+	    let key = event.key.toLowerCase().replace(/^arrow/,'');
+	    console.log('key event',key);
+	    switch(key) {
+		case 'down':
+    		// вниз
+    		 break;
+    		case 'up':
+    	        // вверх
+    		 break;
+    		case 'left':
+    		 // влево
+    		 addfocus('left');
+    		 break;
+    		case 'right':
+    		// вправо
+    		addfocus('right');
+    		break;
+    		case 'enter':
+    		 // ок
+    		if (typeof document.querySelectorAll('li.onFocus')[0] !== "undefined"){
+    		    let event = new Event("click");
+		    document.querySelectorAll('li.onFocus')[0].dispatchEvent(event);
+		}
+    		break;
+	    }
+	});
+    }
+});
+</script>
+</body>
+</html>
