@@ -45,8 +45,8 @@ div#command{
     const url = new URL(window.location.href);
     if (url.searchParams.get('devel') === 'true'){
         console.info('Start devel version');
-        var token = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwYmY2ZjUwNzIzOWMyNGY5MDA5OTE3NWI4ZThlOGFiNTRlMWMxNjYxZTM4MzM0Y2E0MTYyMTA1ZmMxMjRkZjIwN2QyZmQwY2Q1ZWYyN2FiZiIsImF1ZCI6IlZQUyIsImV4cCI6MTY0MDA4OTY1OCwiaWF0IjoxNjQwMDAzMjQ4LCJpc3MiOiJLRVlNQVNURVIiLCJ0eXBlIjoiQmVhcmVyIiwianRpIjoiYmI3MDZkYWItMzk4Ni00YjMwLTg1ZDctYmE3NWI1MDEwNWMyIiwic2lkIjoiZWM3MjdhY2ItMjA4OC00M2M5LThiNTMtYzQ4YTc0ODAxMjkwIn0.M4WgD9T7qgA_XjTOAsTQxpwfJpn5L-sgkqn3xhBOzFV-MsaNC_NRANs46Jb_spVJYz3TfclUEJ7nCQKjR77ICwvWgLj1VBG6eTUxCAyM9-B1Mw523PjMt8QFoOBuwFzW5lgft7C2D0FqK2D4GP5qdlUPw2QQo2NQqhEkld6ToD9ph1fyint5RO3vaQToKJVIR6h5x1Ns-f6YZDeoWGse8yN8cpXDKtJ4LaqfEV3yv2KyMzXG919FiVACvlAyEmFZDc1ee5Nuqj4TPzYE2Z0Ihy6B_KLnL_fmTPKGKOJefbf7VFjEe949lRvPDBUvOghuAMoQbfhRB-JtW01JiPo4TjQn64lAkqBGvirMPt4J3YC9Qg8uN9bTDvPK7GqkC4M8fWS9WCPVYjEQtIlSACP33gMFv7x4xGWIQrgQLHNJoG7jcoJcrjlr6l98jS1rZ10591K8PDi_C4_QFHjv5EERtgQwfA9MXzUFf8B8TIx3DFak3pkIqhJywH1I9K4YXS5B5ZZ9T4EVuiVWReZ3jJTIrEfbjTw3AH2FVkTuxpTesLmp3Wdxhf3LnHCK3mvFGNquUnoglxgJtFXh92ciEZSk2jXIGrbuItidVBOJcim4Y-0DQwetm8OdzOCxrdhA6VaZg7-xEmlk950d8xOi8kaOzIT_bZHwy-TGgpHksXGRRLs'; // <- сюда вставляем токен из smartapp-studio (https://github.com/sberdevices/assistant-client/tree/main/examples/umd-example)
-        var initPhrase = 'запусти мой канвас'; // <- сюда вставляем активационную фразу своего canvas app
+        var token = ''; // <- сюда вставляем токен из smartapp-studio (https://github.com/sberdevices/assistant-client/tree/main/examples/umd-example)
+        var initPhrase = 'запусти НАЗВАНИЕ ВАШЕГО СМАРТАПА'; // <- сюда вставляем активационную фразу своего canvas app
         var ac = assistant.createSmartappDebugger({ getState: () => state, token, initPhrase });
     }else{
         console.info('Start production version');
