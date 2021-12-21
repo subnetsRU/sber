@@ -38,22 +38,13 @@ div#command{
 <div id="command"></div>
 <button id="next">Далее</button>
 <BR><BR>
-<button id="ad">Запустить рекламу</button>
+<button id="ad-video">Запустить видео рекламу</button>
+<BR><BR>
+<button id="ad-banner">Запустить банерную рекламу</button>
 
 <script type="text/javascript">
-    var state = { };
-    const url = new URL(window.location.href);
-    if (url.searchParams.get('devel') === 'true'){
-        console.info('Start devel version');
-        var token = ''; // <- сюда вставляем токен из smartapp-studio (https://github.com/sberdevices/assistant-client/tree/main/examples/umd-example)
-        var initPhrase = 'запусти НАЗВАНИЕ ВАШЕГО СМАРТАПА'; // <- сюда вставляем активационную фразу своего canvas app
-        var ac = assistant.createSmartappDebugger({ getState: () => state, token, initPhrase });
-    }else{
-        console.info('Start production version');
-        var ac = assistant.createAssistant({ getState: () => state });
-    }
-
     var AD = {
+	isOnTest: true,
 	onError: function(e){
 	    console.error('AD error',e);
 	},
@@ -75,7 +66,36 @@ div#command{
         	console.error('window.SberDevicesAdSDK not defined',window.SberDevicesAdSDK);
     	    }
 	},
+	banner: function(){
+	    if (typeof window.SberDevicesAdSDK !== "undefined"){
+		window.SberDevicesAdSDK.runBanner({
+		    onSuccess: () => {
+			console.log('runBannerAd success');
+		    },
+		    onError: (err) => {
+			console.log('runBannerAd failed',err);
+		    },
+		    onAdReady: () => {
+			console.log('runBannerAd ready');
+		    },
+		});
+	    }
+	},
     };
+
+    var state = { };
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('devel') === 'true'){
+        console.info('Start devel version');
+        var token = ''; // <- сюда вставляем токен из smartapp-studio (https://github.com/sberdevices/assistant-client/tree/main/examples/umd-example)
+        var initPhrase = 'запусти НАЗВАНИЕ ВАШЕГО СМАРТАПА'; // <- сюда вставляем активационную фразу своего canvas app
+        var ac = assistant.createSmartappDebugger({ getState: () => state, token, initPhrase });
+    }else{
+        console.info('Start production version');
+        var ac = assistant.createAssistant({ getState: () => state });
+        AD.isOnTest = false;
+    }
+
 
     var processData = function(command){
         console.info('got command',command);
@@ -91,8 +111,12 @@ div#command{
 		    onSuccess: AD.onSuccess,
 		    onError: AD.onError,
 		};
-		console.log('adInit',adInit);
-		window.SberDevicesAdSDK.initWithParams(adInit);
+		if (typeof window.SberDevicesAdSDK !== "undefined"){
+		    console.log('adInit',adInit);
+		    window.SberDevicesAdSDK.initWithParams(adInit, AD.isOnTest);
+		}else{
+		    console.error('SberDevicesAdSDK init failed. window.SberDevicesAdSDK is',window.SberDevicesAdSDK);
+		}
 	    }
 	}
     }
@@ -117,12 +141,21 @@ div#command{
 	    },
 	    false
 	);
-	let ad = document.getElementById("ad");
-	ad.addEventListener(
+	let adv = document.getElementById("ad-video");
+	adv.addEventListener(
 	     "click",
 	     function(){
 	        console.log('Run ad video');
 	        AD.video();
+	    },
+	    false
+	);
+	let adb = document.getElementById("ad-banner");
+	adb.addEventListener(
+	     "click",
+	     function(){
+	        console.log('Run ad banner');
+	        AD.banner();
 	    },
 	    false
 	);
